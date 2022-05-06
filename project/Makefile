@@ -9,13 +9,16 @@ AS              = msp430-elf-as
 
 all:
 	(cd timerLib && make install)
-	make button.elf
+	make project.elf
+
 
 #additional rules for files
-button.elf:: ${COMMON_OBJECTS} lib/libTimer.a
+project.elf:: ${COMMON_OBJECTS} buzzer.o   lib/libTimer.a
 	${CC} ${CFLAGS} ${LDFLAGS} -o $@ $^
 
-load: button.elf
+
+
+load: project.elf
 	msp430loader.sh $^
 
 clean:
