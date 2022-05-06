@@ -9,10 +9,10 @@ AS              = msp430-elf-as
 
 all:
 	(cd timerLib && make install)
-	(make button.elf)
+	make button.elf
 
 #additional rules for files
-button.elf: ${COMMON_OBJECTS} ../lib/libTimer.a
+button.elf:: ${COMMON_OBJECTS} lib/libTimer.a
 	${CC} ${CFLAGS} ${LDFLAGS} -o $@ $^
 
 load: button.elf
