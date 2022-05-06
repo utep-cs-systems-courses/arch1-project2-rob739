@@ -1,8 +1,8 @@
 #include <msp430.h>
 #include "timerLib/libTimer.h"
 
-#define LED_RED BIT0               // P1.0
-#define LED_GREEN BIT6             // P1.6
+#define LED_RED BIT6               // P1.6
+#define LED_GREEN BIT0             // P1.0
 #define LEDS (LED_RED | LED_GREEN)
 
 
@@ -11,7 +11,9 @@
 
 #define SWITCHES SW1/* only 1 switch on this board */
 
-
+int count = 0;
+int state = 0;
+int period = 0;
 
 void switch_init() {
 
@@ -19,7 +21,7 @@ void switch_init() {
 
   P1IE |= SWITCHES;/* enable interrupts from switches */
 
-  P1OUT |= SWITCHES;/* pull-ups for switches */
+  // P1OUT |= SWITCHES;/* pull-ups for switches */
 
   P1DIR &= ~SWITCHES;/* set switches' bits for input */
 
@@ -51,7 +53,7 @@ void main(void)
 
 {
 
-  switch_init();
+  // switch_init();
 
   led_init();
 
@@ -81,21 +83,21 @@ switch_interrupt_handler()
 
   /* update switch interrupt sense to detect changes from current buttons */
 
-  P1IES |= (p1val & SWITCHES);/* if switch up, sense down */
+  //P1IES |= (p1val & SWITCHES);/* if switch up, sense down */
 
-  P1IES &= (p1val | ~SWITCHES);/* if switch down, sense up */
+  // P1IES &= (p1val | ~SWITCHES);/* if switch down, sense up */
 
 
 
   if (p1val & SW1) {/* button up */
 
-    P1OUT &= ~LED_GREEN;
+    // P1OUT &= ~LED_GREEN;
 
     buttonDown = 0;
 
   } else {/* button down */
 
-    P1OUT |= LED_GREEN;
+    //P1OUT |= LED_GREEN;
 
     buttonDown = 1;
 
@@ -115,15 +117,29 @@ __interrupt_vec(PORT1_VECTOR) Port_1(){
 
   if (P1IFG & SWITCHES) {      /* did a button cause this interrupt? */
 
-    P1IFG &= ~SWITCHES;      /* clear pending sw interrupts */
+    // P1IFG &= ~SWITCHES;      /* clear pending sw interrupts */
 
     switch_interrupt_handler();/* single handler for all switches */
 
   }
 
 }
-
-
+greenOn(){
+  P1OUT |= LED_GREEN;
+  return 0;
+}
+greenOff(){
+  P1OUT &= ~LED_GREEN;
+    return 0;
+}
+redOn(){
+  P1OUT |= LED_RED;
+  return 0;
+}
+redOff(){
+  P1OUT &= ~LED_RED;
+  return 0;
+}
 
 void
 
@@ -131,24 +147,44 @@ __interrupt_vec(WDT_VECTOR) WDT()/* 250 interrupts/sec */
 
 {
 
-  static int blink_count = 0;
+  count++;
+  if(count > 750){
+    count=0;
+    state++;
+  }
+  if(state == 4){
+      state = 0;
+  }
 
-  switch (blink_count) {
-
-  case 6:
-
-    blink_count = 0;
-
-    P1OUT |= LED_RED;
-
+  switch (state) {
+  case 0: // both leds off
+    P1OUT &= ~LEDS;
     break;
-
+  case 1: //green led on only
+    P1DIR |= LED_GREEN;
+    redOff();
+    greenOn();    
+    break;
+   case 2: // red led on only
+    P1DIR |= LED_RED;
+    greenOff();
+    redOn();
+    break;
+   case 3: //both leds alternate and buzz
+     P1DIR |= LEDS;
+     period++;
+     if(period < 50){
+       greenOn();
+       redOff();
+     }
+     else{
+       redOn();
+       greenOff();
+     }
+     if(period >100)period =0;
+    break;
   default:
-
-    blink_count ++;
-
-    if (!buttonDown) P1OUT &= ~LED_RED; /* don't blink off if button is down */
-
+    count++;//if (!buttonDown) /* don't blink off if button is down */
   }
 
 } 
